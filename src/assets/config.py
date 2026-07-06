@@ -13,16 +13,16 @@ class config:
     seed = 42
 
     #画像サイズ
-    img_size = 224;
+    img_size = 514;
     
     # バッチサイズ
-    batch_size = 128;
+    batch_size = 16;
     
     # 学習回数
-    epochs = 20;
+    epochs = 50;
     
     # 学習率
-    learning_rate = 0.0001;
+    learning_rate = 0.001;
     
     
     # ----- segmentation ----- #
@@ -31,7 +31,7 @@ class config:
     architecture = "Unet"
     
     # エンコーダー（バックボーン）
-    encoder_name = "resnet34"
+    encoder_name = "resnet50"
     
     # エンコーダーの事前学習済み重み（初期値）
     encoder_weights = "imagenet"

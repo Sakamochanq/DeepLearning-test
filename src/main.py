@@ -4,7 +4,7 @@ from assets.train import Train
 
 # データを読み込む（config.py）
 data = DataManager()
-train_loader, val_loader, classes = data.load()
+train_loader, val_loader, classes = data.load(val_ratio=Train.VAL_RATIO)
 
 # モデルの作成
 model = Model().build()
