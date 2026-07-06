@@ -1,13 +1,13 @@
 class config:
     
     # 学習させるデータセット
-    dataset = "C:\\Enviroments\\nnForge\\src\\dataset\\images\\";
+    dataset = "C:\\Enviroments\\nnForge\\src\\dataset\\images\\DeepCrack";
     
     # 各サブフォルダ名
-    train_img_dir = "C:\\Enviroments\\nnForge\\src\\dataset\\images\\"
-    train_lab_dir = "C:\\Enviroments\\nnForge\\src\\dataset\\images\\"
-    test_img_dir = "C:\\Enviroments\\nnForge\\src\\dataset\\images\\"
-    test_lab_dir = "C:\\Enviroments\\nnForge\\src\\dataset\\images\\"
+    train_img_dir = "C:\\Enviroments\\nnForge\\src\\dataset\\images\\DeepCrack\\train_img"
+    train_lab_dir = "C:\\Enviroments\\nnForge\\src\\dataset\\images\\DeepCrack\\train_lab"
+    test_img_dir = "C:\\Enviroments\\nnForge\\src\\dataset\\images\\DeepCrack\\test_img"
+    test_lab_dir = "C:\\Enviroments\\nnForge\\src\\dataset\\images\\DeepCrack\\test_lab"
     
     # 分割シード
     seed = 42
