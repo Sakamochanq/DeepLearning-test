@@ -1,17 +1,11 @@
-# クラスのインポート
-from xml.parsers.expat import model
+import os
+import torch
+
 from assets.config import config
-from assets.dataset import DataManager
 from assets.model import Model
 from assets.predict import Predict
 
-import torch
 
-
-# データを読み込む
-data = DataManager()
-train_loader, val_loader, classes = data.load()
-    
 # モデルの作成
 model = Model().build()
 
@@ -20,14 +14,18 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 model.load_state_dict(torch.load(config.model, map_location=device))
 model.eval()
-    
+
 # Predictorの定義
-predictor = Predict(model, classes, device)
+predictor = Predict(model, device)
 
-print("Classes:", classes)
-
-# 任意の画像から推論
+# DeepCrackのルートディレクトリ（配下に test_img, test_lab を想定）
 root = input('\n Root ❯ ').strip()
 
-# 通常の予測を実行
-predictor.predict_all(root)
+# オーバーレイ画像の保存先
+save_dir = os.path.join(root, "predict_results")
+
+# ひび割れ抽出を実行
+# test_lab が存在する場合は、正解マスクとの Dice / IoU も計算する
+predictor.predict_folder(root, lab_dir=None, save_dir=save_dir)
+
+print("\033[92m\nAll predictions completed.\n\033[0m")

@@ -1,35 +1,39 @@
-import torch.nn as nn
-from torchvision import models
+import segmentation_models_pytorch as smp
 
+from assets.config import config
 
 class Model:
     def build(self):
         
         # 既存の学習済みモデル ResNet18 を使用する
-        model = models.resnet18(weights="DEFAULT")
+        model = smp.Unet(
+            encoder_name = config.encoder_name,
+            encoder_weights = config.encoder_weights,
+            in_channels = 3,
+            
+            # ひび割れ 1 / 背景 0
+            classes=1
+        )
         
         # 既存の学習済みモデルの重みを固定する
         # つまり、ResNet18の特徴抽出部分は学習させず、最終層のみを学習させる
         for param in model.parameters():
             param.requires_grad = False
             
-        for param in model.parameters():
-            param.requires_grad = True
-            
-        for param in model.layer3.parameters():
-            param.requires_grad = True
-            
         # レイヤー3層目の追加
-        for param in model.layer3.parameters():
+        for param in model.encoder.layer3.parameters():
             param.requires_grad = True
         
         # レイヤー4層目の追加
-        for param in model.layer4.parameters():
+        for param in model.encoder.layer4.parameters():
             param.requires_grad = True
-
-        # 最終層を2クラス分類用に変更
-        # model.fc = nn.Linear(model.fc.in_features, 2)
         
-        model.fc = nn.Sequential(nn.Dropout(p=0.5),  nn.Linear(model.fc.in_features, 2))
+        # デコーダーは常時学習
+        for param in model.decoder.parameters():
+            param.requires_grad = True
+            
+        # セグメンテーションヘッド（最終出力層）も常時学習
+        for param in model.segmentation_head.parameters():
+            param.requires_grad = True
 
         return model
