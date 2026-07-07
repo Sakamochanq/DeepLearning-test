@@ -26,6 +26,6 @@ save_dir = os.path.join(root, "predict_results")
 
 # ひび割れ抽出を実行
 # test_lab が存在する場合は、正解マスクとの Dice / IoU も計算する
-predictor.predict_folder(root, lab_dir=None, save_dir=save_dir)
+predictor.predict_folder(root, save_dir=save_dir)
 
 print("\033[92m\nAll predictions completed.\n\033[0m")
