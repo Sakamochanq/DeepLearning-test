@@ -1,17 +1,5 @@
-import torch.optim as optim
-from torch.optim.lr_scheduler import (
-    StepLR, 
-    ExponentialLR, 
-    CosineAnnealingLR, 
-    ReduceLROnPlateau,
-
-    # ウォームアップ用
-    LinearLR,
-    
-    # 合成用
-    SequentialLR
-)
-
+import math
+from torch.optim.lr_scheduler import StepLR, ExponentialLR, ReduceLROnPlateau, LambdaLR
 from assets.config import config
 
 
@@ -20,35 +8,42 @@ class lr_scheduler:
     @staticmethod
     def create(optim):
         if config.type == "StepLR":
-            main_scheduler = StepLR(optim, step_size=config.step_size, gamma=config.gamma)
+            return StepLR(optim, step_size=config.step_size, gamma=config.gamma)
         
         elif config.type == "ExponentialLR":
-            main_scheduler = ExponentialLR(optim, gamma=config.gamma)
+            return ExponentialLR(optim, gamma=config.gamma)
         
         elif config.type == "CosineAnnealingLR":
-            warmup_epochs = 5
-            main_epochs = max(1, config.epochs - warmup_epochs)
-            main_scheduler = CosineAnnealingLR(optim, T_max=main_epochs)
+            warmup_epochs = getattr(config, 'warmup_epochs', 5)
+            total_epochs = config.epochs
+            eta_min = getattr(config, 'eta_min', 1e-6)
+            base_lr = config.learning_rate
+
+            # どんな環境でも確実に計算通りの学習率にする数式
+            def lr_lambda(current_epoch):
+                if current_epoch < warmup_epochs:
+                    # 1エポック目から5エポック目にかけて、0.1倍から1.0倍に直線的に上昇
+                    return 0.1 + 0.9 * (current_epoch / warmup_epochs)
+                else:
+                    # 後半エポックに向けて滑らかなコサインカーブで減衰
+                    progress = (current_epoch - warmup_epochs) / (total_epochs - warmup_epochs)
+                    progress = min(1.0, max(0.0, progress)) # 1.0を超えないようにガード
+                    cosine_decay = 0.5 * (1.0 + math.cos(math.pi * progress))
+                    
+                    # 実際の学習率を計算し、初期学習率(base_lr)に対する倍率に変換して返す
+                    target_lr = eta_min + (base_lr - eta_min) * cosine_decay
+                    return target_lr / base_lr
+
+            # LambdaLR を使えば、SequentialLRのバグを完全に回避できます
+            return LambdaLR(optim, lr_lambda)
         
         elif config.type == "ReduceLROnPlateau":
             return ReduceLROnPlateau(optim, mode='min', factor=config.gamma, patience=5)
         
         else:
-            # Bonk!
-            print(f"\033[93mBonk!\033[0m")
+            print(f"\033[93mlr Scheduler is Bonk!\033[0m")
             return None
-        
-        # ウォームアップの追加
-        warmup_epochs = getattr(config, 'warmup_epochs', 5)
-        
-        # 本来の学習率の 0.1倍 から 1.0倍 まで直線的に上げる
-        warmup_scheduler = LinearLR(optim, start_factor=0.1, end_factor=1.0, total_iters=warmup_epochs)
-        
-        # ウォームアップとメインのスケジューラーを合成させる
-        combined_scheduler = SequentialLR(optim, schedulers=[warmup_scheduler, main_scheduler], milestones=[warmup_epochs])
-        
-        return combined_scheduler
-    
+
     @staticmethod
     def step(scheduler, val_acc=None):
         if isinstance(scheduler, ReduceLROnPlateau):

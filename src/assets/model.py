@@ -18,7 +18,11 @@ class Model:
         # 既存の学習済みモデルの重みを固定する
         # つまり、ResNet18の特徴抽出部分は学習させず、最終層のみを学習させる
         for param in model.parameters():
-            param.requires_grad = False
+            param.requires_grad = True
+            
+        # レイヤー1層目の追加
+        for param in model.encoder.layer1.parameters():
+            param.requires_grad = True
             
         # レイヤー3層目の追加
         for param in model.encoder.layer3.parameters():
