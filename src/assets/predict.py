@@ -135,12 +135,12 @@ class Predict:
         metrics = self.calculate_metrics(pred_mask, label_mask)
         crack_ratio = pred_mask.mean() * 100
 
-        print(f"  [{os.path.basename(image_path)}]")
-        print(f"    IoU: {metrics['iou']:.4f}")
-        print(f"    Recall: {metrics['recall']:.4f}")
-        print(f"    Precision: {metrics['precision']:.4f}")
-        print(f"    F1: {metrics['f1']:.4f}")
-        print(f"    Accuracy: {metrics['accuracy']:.4f}")
+        print(f"[{os.path.basename(image_path)}]")
+        print(f"  IoU: {metrics['iou']:.4f}")
+        print(f"  Recall: {metrics['recall']:.4f}")
+        print(f"  Precision: {metrics['precision']:.4f}")
+        print(f"  F1: {metrics['f1']:.4f}")
+        print(f"  Accuracy: {metrics['accuracy']:.4f}")
         # print(f"    ひび割れ面積率: {crack_ratio:.2f}%")
 
         return {
@@ -158,7 +158,7 @@ class Predict:
         pairs = collect_pairs(img_dir, lab_dir)
 
         if not pairs:
-            print(f"Not found: {img_dir} / {lab_dir}\n")
+            print(f"Not Bonk!: {img_dir} / {lab_dir}\n")
             return []
 
         results = []
