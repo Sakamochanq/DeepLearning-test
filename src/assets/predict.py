@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from torchvision import transforms
 from torchvision.transforms import functional as TF
+from assets.dataset import collect_pairs
 from assets.config import config
 
 
@@ -36,6 +37,20 @@ class Predict:
 
         return image, tensor
 
+    # 画像と正解ラベルを読み込む
+    def load_label(self, label_path):
+        label = Image.open(label_path).convert("L")
+        label = TF.resize(
+            label,
+            (config.img_size, config.img_size),
+            interpolation=transforms.InterpolationMode.NEAREST,
+        )
+
+        label = TF.to_tensor(label)
+        label = (label > 0.5).to(torch.uint8).squeeze(0).cpu().numpy()
+
+        return label
+
     # 一枚で推論を行う
     def predict_single(self, image_path):
         image, image_tensor = self.load_image(image_path)
@@ -48,66 +63,138 @@ class Predict:
 
         return image, prob_map, pred_mask
 
-    # 予測結果をオーバーレイ表示して保存する
-    def save_overlay(self, image, pred_mask, save_path):
-        image_array = np.array(image).astype(np.float32) / 255.0
+    # 予測マスクを保存する
+    def save_mask(self, pred_mask, save_path):
+        mask_image = Image.fromarray((pred_mask * 255).astype(np.uint8), mode="L")
+        mask_image.save(save_path)
 
-        pred_overlay = image_array.copy()
-        pred_overlay[pred_mask == 1] = pred_overlay[pred_mask == 1] * 0.4 + np.array([1.0, 0.0, 0.0]) * 0.6
+    # 混同行列と各種指標を計算する
+    def calculate_metrics(self, pred_mask, label_mask):
+        pred = pred_mask.astype(np.uint8)
+        label = label_mask.astype(np.uint8)
 
-        fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+        tp = int(np.logical_and(pred == 1, label == 1).sum())
+        tn = int(np.logical_and(pred == 0, label == 0).sum())
+        fp = int(np.logical_and(pred == 1, label == 0).sum())
+        fn = int(np.logical_and(pred == 0, label == 1).sum())
 
-        axes[0].imshow(image_array)
-        axes[0].set_title("Input")
-        axes[0].axis("off")
+        eps = 1e-8
+        
+        # 
+        iou = tp / (tp + fp + fn + eps)
+        recall = tp / (tp + fn + eps)
+        precision = tp / (tp + fp + eps)
+        f1 = (2.0 * precision * recall) / (precision + recall + eps)
+        accuracy = (tp + tn) / (tp + tn + fp + fn + eps)
 
-        axes[1].imshow(pred_overlay)
-        axes[1].set_title("Predicted Crack")
-        axes[1].axis("off")
+        return {
+            "tp": tp,
+            "tn": tn,
+            "fp": fp,
+            "fn": fn,
+            "iou": iou,
+            "recall": recall,
+            "precision": precision,
+            "f1": f1,
+            "accuracy": accuracy,
+        }
 
+    # 混同行列を描画して保存する
+    def save_confusion_matrix(self, cm, save_path):
+        fig, ax = plt.subplots(figsize=(6, 5))
+
+        # 行: 正解, 列: 予測
+        im = ax.imshow(cm, cmap="Blues")
+        ax.set_xticks([0, 1])
+        ax.set_yticks([0, 1])
+        ax.set_xticklabels(["Background", "Crack"])
+        ax.set_yticklabels(["Background", "Crack"])
+        ax.set_xlabel("Predicted")
+        ax.set_ylabel("Ground Truth")
+
+        for i in range(cm.shape[0]):
+            for j in range(cm.shape[1]):
+                ax.text(j, i, f"{cm[i, j]}", ha="center", va="center", color="black")
+
+        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
         plt.tight_layout()
         plt.savefig(save_path, dpi=150)
         plt.close(fig)
 
     # 結果を保存する
-    def predict_image(self, image_path, save_dir="./results"):
+    def predict_image(self, image_path, label_path, save_dir="./results"):
         os.makedirs(save_dir, exist_ok=True)
 
         image, prob_map, pred_mask = self.predict_single(image_path)
+        label_mask = self.load_label(label_path)
 
         fname = os.path.splitext(os.path.basename(image_path))[0]
-        save_path = os.path.join(save_dir, f"{fname}_result.png")
-        self.save_overlay(image, pred_mask, save_path)
+        save_path = os.path.join(save_dir, f"{fname}.png")
+        self.save_mask(pred_mask, save_path)
 
+        metrics = self.calculate_metrics(pred_mask, label_mask)
         crack_ratio = pred_mask.mean() * 100
 
         print(f"  [{os.path.basename(image_path)}]")
-        print(f"    ひび割れ面積率: {crack_ratio:.2f}%")
-        print(f"    保存先: {save_path}")
+        print(f"    IoU: {metrics['iou']:.4f}")
+        print(f"    Recall: {metrics['recall']:.4f}")
+        print(f"    Precision: {metrics['precision']:.4f}")
+        print(f"    F1: {metrics['f1']:.4f}")
+        print(f"    Accuracy: {metrics['accuracy']:.4f}")
+        # print(f"    ひび割れ面積率: {crack_ratio:.2f}%")
 
         return {
             "path": image_path,
+            "label_path": label_path,
             "pred_mask": pred_mask,
             "crack_ratio": crack_ratio,
+            "metrics": metrics,
         }
 
     # 複数枚で推論を行う
-    def predict_folder(self, img_dir, save_dir="./predict_results"):
-        
-        # 画像フォルダ内の画像を取得
-        images = [
-            os.path.join(img_dir, f) for f in sorted(os.listdir(img_dir))
-            if os.path.splitext(f)[1].lower() in SUPPORTED_EXTENSIONS
-        ]
+    def predict_folder(self, img_dir, lab_dir, save_dir="./predict_results"):
 
-        # 
-        if not images:
-            print(f"Not found: {img_dir}\n")
+        # 画像とラベルのペアを収集する
+        pairs = collect_pairs(img_dir, lab_dir)
+
+        if not pairs:
+            print(f"Not found: {img_dir} / {lab_dir}\n")
             return []
 
         results = []
-        for img_path in images:
-            result = self.predict_image(img_path, save_dir=save_dir)
+        total_cm = np.zeros((2, 2), dtype=np.int64)
+
+        for img_path, lab_path in pairs:
+            result = self.predict_image(img_path, lab_path, save_dir=save_dir)
             results.append(result)
+            total_cm[0, 0] += result["metrics"]["tn"]
+            total_cm[0, 1] += result["metrics"]["fp"]
+            total_cm[1, 0] += result["metrics"]["fn"]
+            total_cm[1, 1] += result["metrics"]["tp"]
+
+        # 集計値を出力する
+        tn, fp = total_cm[0, 0], total_cm[0, 1]
+        fn, tp = total_cm[1, 0], total_cm[1, 1]
+        eps = 1e-8
+        summary = {
+            "iou": float(tp / (tp + fp + fn + eps)),
+            "recall": float(tp / (tp + fn + eps)),
+            "precision": float(tp / (tp + fp + eps)),
+            "f1": float((2.0 * tp) / (2.0 * tp + fp + fn + eps)),
+            "accuracy": float((tp + tn) / (tp + tn + fp + fn + eps)),
+        }
+
+        print("\n[Summary]")
+        print(f"  IoU: {summary['iou']:.4f}")
+        print(f"  Recall: {summary['recall']:.4f}")
+        print(f"  Precision: {summary['precision']:.4f}")
+        print(f"  F1: {summary['f1']:.4f}")
+        print(f"  Accuracy: {summary['accuracy']:.4f}")
+
+        # 混同行列を result フォルダへ保存する
+        cm_path = os.path.join(save_dir, "confusion_matrix.png")
+        self.save_confusion_matrix(total_cm, cm_path)
+
+        print(f"  Confusion matrix: {cm_path}")
 
         return results
