@@ -31,7 +31,7 @@ class config:
     architecture = "Unet"
     
     # エンコーダー（バックボーン）
-    encoder_name = "resnet50"
+    encoder_name = "efficientnet-b4"
     
     # エンコーダーの事前学習済み重み（初期値）
     encoder_weights = "imagenet"

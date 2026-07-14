@@ -21,11 +21,14 @@ predictor = Predict(model, device)
 # DeepCrackのルートディレクトリ（配下に test_img, test_lab を想定）
 root = input('\n Root ❯ ').strip()
 
-# オーバーレイ画像の保存先
-save_dir = os.path.join(root, "predict_results")
+# 入力と正解ラベルの保存先
+img_dir = os.path.join(root, "image")
+lab_dir = os.path.join(root, "label")
 
-# ひび割れ抽出を実行
-# test_lab が存在する場合は、正解マスクとの Dice / IoU も計算する
-predictor.predict_folder(root, save_dir=save_dir)
+# 結果の保存先
+save_dir = os.path.join(root, "result")
+
+# ひび割れ抽出と評価を実行する
+predictor.predict_folder(img_dir, lab_dir, save_dir=save_dir)
 
 print("\033[92m\nAll predictions completed.\n\033[0m")
