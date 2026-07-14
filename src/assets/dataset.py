@@ -68,24 +68,37 @@ class CrackSegDataset(Dataset):
 
         if self.train:
             
-            # ±15°の範囲でランダムに回転（画像とマスクへ同一角度を適用）
-            angle = random.uniform(-15, 15)
-            image = TF.rotate(image, angle)
-            mask = TF.rotate(mask, angle, interpolation=transforms.InterpolationMode.NEAREST)
+            # 【変更】±180°の任意回転から、ピクセルが壊れない「90度単位の回転」に変更
+            # 0度, 90度, 180度, 270度のいずれかからランダムに選択
+            if random.random() < 0.5:
+                # 1: 90度, 2: 180度, 3: 270度 回転
+                rot_k = random.choice([1, 2, 3])
+                image = TF.rotate(image, rot_k * 90)
+                mask = TF.rotate(mask, rot_k * 90, interpolation=transforms.InterpolationMode.NEAREST)
 
             # 50%で水平反転
             if random.random() < 0.5:
                 image = TF.hflip(image)
                 mask = TF.hflip(mask)
 
-            # 30%で垂直反転
-            if random.random() < 0.3:
+            # 50%で垂直反転（コメントの30%に合わせるなら 0.3 に変更してください）
+            if random.random() < 0.5:
                 image = TF.vflip(image)
                 mask = TF.vflip(mask)
 
             # 明るさ、コントラスト、彩度をランダムに変化させる（マスクには適用しない）
             color_jitter = transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2)
             image = color_jitter(image)
+            
+            if random.random() < 0.5:
+                if random.random() < 0.5:
+                    # ランダムに少しぼかす（カーネルサイズは3か5）
+                    kernel_size = random.choice([3, 5])
+                    image = transforms.GaussianBlur(kernel_size=kernel_size)(image)
+                else:
+                    # ランダムに輪郭を強調する（シャープネス）
+                    sharpness_factor = random.uniform(0.5, 2.0)
+                    image = TF.adjust_sharpness(image, sharpness_factor)
 
         image = TF.to_tensor(image)
         image = self.normalize(image)

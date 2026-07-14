@@ -18,7 +18,11 @@ class Model:
         # 既存の学習済みモデルの重みを固定する
         # まず全体を固定する
         for param in model.parameters():
-            param.requires_grad = False
+            param.requires_grad = True
+            
+        # レイヤー1層目の追加
+        for param in model.encoder.layer1.parameters():
+            param.requires_grad = True
             
         # 互換性のある encoder の場合のみ深い層を再学習対象にする
         if hasattr(model.encoder, "layer3"):

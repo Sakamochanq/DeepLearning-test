@@ -13,7 +13,7 @@ class config:
     seed = 42
 
     #画像サイズ
-    img_size = 514;
+    img_size = 512;
     
     # バッチサイズ
     batch_size = 16;
@@ -22,7 +22,7 @@ class config:
     epochs = 100;
     
     # 学習率
-    learning_rate = 0.001;
+    learning_rate = 0.0005;
     
     
     # ----- segmentation ----- #
@@ -56,7 +56,8 @@ class config:
     # ----- lr_scheduler ----- #
     
     type = "CosineAnnealingLR"
-    step_size = epochs
+    warmup_epochs = 5
+    eta_min = 1e-6
     gamma = 0.5
     
     # ------------------------ #
