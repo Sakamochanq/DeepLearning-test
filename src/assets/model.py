@@ -5,7 +5,7 @@ from assets.config import config
 class Model:
     def build(self):
         
-        # 既存の学習済みモデル ResNet18 を使用する
+        # セグメンテーションモデルを構築する
         model = smp.Unet(
             encoder_name = config.encoder_name,
             encoder_weights = config.encoder_weights,
@@ -16,17 +16,18 @@ class Model:
         )
         
         # 既存の学習済みモデルの重みを固定する
-        # つまり、ResNet18の特徴抽出部分は学習させず、最終層のみを学習させる
+        # まず全体を固定する
         for param in model.parameters():
             param.requires_grad = False
             
-        # レイヤー3層目の追加
-        for param in model.encoder.layer3.parameters():
-            param.requires_grad = True
-        
-        # レイヤー4層目の追加
-        for param in model.encoder.layer4.parameters():
-            param.requires_grad = True
+        # 互換性のある encoder の場合のみ深い層を再学習対象にする
+        if hasattr(model.encoder, "layer3"):
+            for param in model.encoder.layer3.parameters():
+                param.requires_grad = True
+
+        if hasattr(model.encoder, "layer4"):
+            for param in model.encoder.layer4.parameters():
+                param.requires_grad = True
         
         # デコーダーは常時学習
         for param in model.decoder.parameters():
