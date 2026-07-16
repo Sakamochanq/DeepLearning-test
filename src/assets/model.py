@@ -20,10 +20,6 @@ class Model:
         for param in model.parameters():
             param.requires_grad = True
             
-        # レイヤー1層目の追加
-        for param in model.encoder.layer1.parameters():
-            param.requires_grad = True
-            
         # 互換性のある encoder の場合のみ深い層を再学習対象にする
         if hasattr(model.encoder, "layer3"):
             for param in model.encoder.layer3.parameters():

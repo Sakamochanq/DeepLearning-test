@@ -22,13 +22,13 @@ class config:
     epochs = 100;
     
     # 学習率
-    learning_rate = 0.0005;
+    learning_rate = 0.001;
     
     
     # ----- segmentation ----- #
     
     # セグメンテーションモデルのアーキテクチャ
-    architecture = "Unet"
+    architecture = "Unetplusplus"
     
     # エンコーダー（バックボーン）
     encoder_name = "efficientnet-b4"
