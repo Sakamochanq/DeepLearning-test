@@ -229,6 +229,25 @@ class Predict:
 
         return macro
     
+    # ひび割れ画像のみの平均
+    def summarize_crack_only(self, results):
+        crack_results = [r for r in results if r["has_crack"]]
+        if len(crack_results) == 0:
+
+            return {
+                "Images": 0,
+                "IoU": 0.0,
+                "Recall": 0.0,
+                "Precision": 0.0,
+                "F1": 0.0,
+                "Accuracy": 0.0,
+            }
+
+        macro = self.summarize_macro(crack_results)
+        macro["Images"] = len(crack_results)
+
+        return macro
+    
 
     # 混同行列を描画して保存する
     def save_confusion_matrix(self, cm, save_path):
@@ -322,6 +341,10 @@ class Predict:
         # マクロ平均の表示
         macro = self.summarize_macro(results)
         self.print_summary("Macro Average", macro)
+        
+        # ひび割れ画像のみの表示
+        crack = self.summarize_crack_only(results)
+        self.print_summary("Crack Only", crack)
 
         # 混同行列を result フォルダへ保存する
         cm_path = os.path.join(save_dir, "confusion_matrix.png")
