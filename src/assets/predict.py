@@ -146,6 +146,33 @@ class Predict:
                 ])
 
         print(f"  Metrics CSV : {csv_path}")
+        
+    
+    # Summaryを整形して表示させる関数
+    def print_summary(self, title, summary):
+
+        print()
+        print(title)
+
+        for key, value in summary.items():
+
+            if isinstance(value, float):
+                print(f"  {key:<10}: {value:.4f}")
+            else:
+                print(f"  {key:<10}: {value}")
+                
+    
+    # 全体情報を集計する
+    def summarize_overall(self, results):
+        total = len(results)
+        crack = sum(result["has_crack"] for result in results)
+
+        return {
+            "Images": total,
+            "Crack": crack,
+            "Background": total - crack,
+        }
+    
 
     # 混同行列を描画して保存する
     def save_confusion_matrix(self, cm, save_path):
