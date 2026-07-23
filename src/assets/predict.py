@@ -191,7 +191,7 @@ class Predict:
         print(f"  Recall: {metrics['recall']:.4f}")
         print(f"  Precision: {metrics['precision']:.4f}")
         print(f"  F1: {metrics['f1']:.4f}")
-        print(f"  Accuracy: {metrics['accuracy']:.4f}")
+        # print(f"  Accuracy: {metrics['accuracy']:.4f}")
         # print(f"    ひび割れ面積率: {crack_ratio:.2f}%")
 
         return {
