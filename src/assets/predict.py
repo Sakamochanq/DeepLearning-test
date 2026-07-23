@@ -173,6 +173,62 @@ class Predict:
             "Background": total - crack,
         }
     
+    
+    # Micro Average（全画素をまとめて評価）
+    def summarize_micro(self, total_cm):
+        tn, fp = total_cm[0, 0], total_cm[0, 1]
+        fn, tp = total_cm[1, 0], total_cm[1, 1]
+        eps = 1e-8
+
+        return {
+            "IoU": tp / (tp + fp + fn + eps),
+            "Recall": tp / (tp + fn + eps),
+            "Precision": tp / (tp + fp + eps),
+            "F1": (2.0 * tp) / (2.0 * tp + fp + fn + eps),
+            "Accuracy": (tp + tn) / (tp + tn + fp + fn + eps),
+            
+            "TP": tp,
+            "FP": fp,
+            "FN": fn,
+            "TN": tn,
+        }
+        
+    # Macro Average（画像ごとの平均）
+    def summarize_macro(self, results):
+        eps = 1e-8
+        if len(results) == 0:
+
+            return {
+                "IoU": 0.0,
+                "Recall": 0.0,
+                "Precision": 0.0,
+                "F1": 0.0,
+                "Accuracy": 0.0,
+            }
+
+        macro = {
+            "IoU": 0.0,
+            "Recall": 0.0,
+            "Precision": 0.0,
+            "F1": 0.0,
+            "Accuracy": 0.0,
+        }
+
+        for result in results:
+            metrics = result["metrics"]
+            macro["IoU"] += metrics["iou"]
+            macro["Recall"] += metrics["recall"]
+            macro["Precision"] += metrics["precision"]
+            macro["F1"] += metrics["f1"]
+            macro["Accuracy"] += metrics["accuracy"]
+
+        n = len(results)
+
+        for key in macro:
+            macro[key] /= (n + eps)
+
+        return macro
+    
 
     # 混同行列を描画して保存する
     def save_confusion_matrix(self, cm, save_path):
@@ -255,30 +311,23 @@ class Predict:
             total_cm[1, 0] += result["metrics"]["fn"]
             total_cm[1, 1] += result["metrics"]["tp"]
 
-        # 集計値を出力する
-        tn, fp = total_cm[0, 0], total_cm[0, 1]
-        fn, tp = total_cm[1, 0], total_cm[1, 1]
-        eps = 1e-8
-        summary = {
-            "iou": float(tp / (tp + fp + fn + eps)),
-            "recall": float(tp / (tp + fn + eps)),
-            "precision": float(tp / (tp + fp + eps)),
-            "f1": float((2.0 * tp) / (2.0 * tp + fp + fn + eps)),
-            "accuracy": float((tp + tn) / (tp + tn + fp + fn + eps)),
-        }
-
-        print("\n[Summary]")
-        print(f"  IoU: {summary['iou']:.4f}")
-        print(f"  Recall: {summary['recall']:.4f}")
-        print(f"  Precision: {summary['precision']:.4f}")
-        print(f"  F1: {summary['f1']:.4f}")
-        print(f"  Accuracy: {summary['accuracy']:.4f}")
+        # オーバーオールスコアの表示
+        overall = self.summarize_overall(results)
+        self.print_summary("Overall", overall)
+        
+        # マイクロ平均の表示
+        micro = self.summarize_micro(total_cm)
+        self.print_summary("Micro Average", micro)
+        
+        # マクロ平均の表示
+        macro = self.summarize_macro(results)
+        self.print_summary("Macro Average", macro)
 
         # 混同行列を result フォルダへ保存する
         cm_path = os.path.join(save_dir, "confusion_matrix.png")
         self.save_confusion_matrix(total_cm, cm_path)
 
-        print(f"  Confusion matrix: {cm_path}")
+        print(f"\n  Confusion matrix: {cm_path}")
         
         self.save_metrics_csv(results, save_dir)
 
