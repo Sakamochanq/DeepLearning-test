@@ -150,9 +150,18 @@ class Predict:
     
     # Summaryを整形して表示させる関数
     def print_summary(self, title, summary):
+        RESET = "\033[0m"
+        colors = {
+            "Overall": "\033[94m",
+            "Micro Average": "\033[96m",
+            "Macro Average": "\033[92m",
+            "Crack Only": "\033[95m",
+        }
+
+        color = colors.get(title, RESET)
 
         print()
-        print(title)
+        print(f"{color}{title}{RESET}")
 
         for key, value in summary.items():
 
@@ -160,7 +169,7 @@ class Predict:
                 print(f"  {key:<10}: {value:.4f}")
             else:
                 print(f"  {key:<10}: {value}")
-                
+        print()
     
     # 全体情報を集計する
     def summarize_overall(self, results):
