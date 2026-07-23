@@ -1,4 +1,5 @@
 import os
+import csv
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -98,6 +99,53 @@ class Predict:
             "f1": f1,
             "accuracy": accuracy,
         }
+        
+    # 評価指標をCSVへ保存する
+    def save_metrics_csv(self, results, save_dir):
+
+        csv_path = os.path.join(save_dir, "metrics.csv")
+
+        with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
+
+            writer = csv.writer(f)
+
+            writer.writerow([
+                "Image",
+                "Has Crack",
+                "TP",
+                "TN",
+                "FP",
+                "FN",
+                "IoU",
+                "Recall",
+                "Precision",
+                "F1",
+                "Accuracy",
+                "GroundTruth Ratio (%)",
+                "Prediction Ratio (%)"
+            ])
+
+            for result in results:
+
+                metrics = result["metrics"]
+
+                writer.writerow([
+                    os.path.basename(result["path"]),
+                    "Yes" if result["has_crack"] else "No",
+                    metrics["tp"],
+                    metrics["tn"],
+                    metrics["fp"],
+                    metrics["fn"],
+                    f"{metrics['iou']:.6f}",
+                    f"{metrics['recall']:.6f}",
+                    f"{metrics['precision']:.6f}",
+                    f"{metrics['f1']:.6f}",
+                    f"{metrics['accuracy']:.6f}",
+                    f"{result['gt_ratio']:.4f}",
+                    f"{result['pred_ratio']:.4f}",
+                ])
+
+        print(f"  Metrics CSV : {csv_path}")
 
     # 混同行列を描画して保存する
     def save_confusion_matrix(self, cm, save_path):
@@ -134,6 +182,9 @@ class Predict:
 
         metrics = self.calculate_metrics(pred_mask, label_mask)
         crack_ratio = pred_mask.mean() * 100
+        
+        gt_ratio = label_mask.mean() * 100
+        has_crack = bool(label_mask.sum())
 
         print(f"[{os.path.basename(image_path)}]")
         print(f"  IoU: {metrics['iou']:.4f}")
@@ -147,7 +198,12 @@ class Predict:
             "path": image_path,
             "label_path": label_path,
             "pred_mask": pred_mask,
-            "crack_ratio": crack_ratio,
+            
+            "has_crack": has_crack,
+            
+            "gt_ratio": gt_ratio,
+            "pred_ratio": crack_ratio,
+            
             "metrics": metrics,
         }
 
@@ -196,5 +252,7 @@ class Predict:
         self.save_confusion_matrix(total_cm, cm_path)
 
         print(f"  Confusion matrix: {cm_path}")
+        
+        self.save_metrics_csv(results, save_dir)
 
         return results
