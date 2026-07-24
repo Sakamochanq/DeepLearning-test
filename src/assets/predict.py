@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from torchvision import transforms
 from torchvision.transforms import functional as TF
+from tqdm import tqdm
 from assets.dataset import collect_pairs
 from assets.config import config
 
@@ -145,17 +146,17 @@ class Predict:
                     f"{result['pred_ratio']:.4f}",
                 ])
 
-        print(f"Export CSV : {csv_path}")
+        # print(f"Export CSV : {csv_path}")
         
     
     # Summaryを整形して表示させる関数
     def print_summary(self, title, summary):
         RESET = "\033[0m"
         colors = {
-            "Overall": "\033[94m",
-            "Micro Average": "\033[96m",
-            "Macro Average": "\033[94m",
-            "Crack Only": "\033[96m",
+            "Overall": "\033[94m ",
+            "Micro Average": "\033[96m ",
+            "Macro Average": "\033[94m ",
+            "Crack Only": "\033[96m ",
         }
 
         color = colors.get(title, RESET)
@@ -296,6 +297,7 @@ class Predict:
         
         gt_ratio = label_mask.mean() * 100
         has_crack = bool(label_mask.sum())
+        
         # print(f"\n[{os.path.basename(image_path)}]")
         # print(f"  IoU: {metrics['iou']:.4f}")
         # print(f"  Recall: {metrics['recall']:.4f}")
@@ -330,7 +332,8 @@ class Predict:
         results = []
         total_cm = np.zeros((2, 2), dtype=np.int64)
 
-        for img_path, lab_path in pairs:
+        print('')
+        for img_path, lab_path in tqdm(pairs, desc=" Predict", ncols=100, colour="#53E6B5", ascii="-#"):
             result = self.predict_image(img_path, lab_path, save_dir=save_dir)
             results.append(result)
             total_cm[0, 0] += result["metrics"]["tn"]
@@ -339,7 +342,7 @@ class Predict:
             total_cm[1, 1] += result["metrics"]["tp"]
             
         print('')
-        print('-'*30)
+        # print('-'*30)
 
         # オーバーオールスコアの表示
         overall = self.summarize_overall(results)
@@ -357,13 +360,13 @@ class Predict:
         crack = self.summarize_crack_only(results)
         self.print_summary("Crack Only", crack)
         
-        print('-'*30)
+        # print('-'*30)
 
         # 混同行列を result フォルダへ保存する
         cm_path = os.path.join(save_dir, "..\\confusion_matrix.png")
         self.save_confusion_matrix(total_cm, cm_path)
 
-        print(f"\Export matrix: {cm_path}")
+        # print(f"\nExport matrix: {cm_path}")
         
         self.save_metrics_csv(results, save_dir)
 
