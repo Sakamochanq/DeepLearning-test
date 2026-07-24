@@ -345,18 +345,22 @@ class Predict:
         # print('-'*30)
 
         # オーバーオールスコアの表示
+        # 入力画像
         overall = self.summarize_overall(results)
         self.print_summary("Overall", overall)
         
         # マイクロ平均の表示
+        # 全体画素の全ての画像のTP/FP/FN/FPを合計した評価 - 画素単位の性能評価）
         micro = self.summarize_micro(total_cm)
         self.print_summary("Micro Average", micro)
         
         # マクロ平均の表示
+        # 各画像のIoUやF1を求め、その平均値 - 画像ごとの性能評価
         macro = self.summarize_macro(results)
         self.print_summary("Macro Average", macro)
         
         # ひび割れ画像のみの表示
+        # ひび割れが存在する画像のみを対象とした評価 - 背景画像は対象外
         crack = self.summarize_crack_only(results)
         self.print_summary("Crack Only", crack)
         
