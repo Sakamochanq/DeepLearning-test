@@ -31,4 +31,4 @@ save_dir = os.path.join(root, "result")
 # ひび割れ抽出と評価を実行する
 predictor.predict_folder(img_dir, lab_dir, save_dir=save_dir)
 
-print("\033[92m\n Done bonk!.\n\n\033[0m")
+print("\033[92m\n Done bonk! ＼(°_o)／ \n\n\033[0m")
