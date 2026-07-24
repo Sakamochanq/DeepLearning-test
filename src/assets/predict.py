@@ -103,7 +103,7 @@ class Predict:
     # 評価指標をCSVへ保存する
     def save_metrics_csv(self, results, save_dir):
 
-        csv_path = os.path.join(save_dir, "metrics.csv")
+        csv_path = os.path.join(save_dir, "..\\metrics.csv")
 
         with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
 
@@ -145,7 +145,7 @@ class Predict:
                     f"{result['pred_ratio']:.4f}",
                 ])
 
-        print(f"  Metrics CSV : {csv_path}")
+        print(f"Export CSV : {csv_path}")
         
     
     # Summaryを整形して表示させる関数
@@ -154,8 +154,8 @@ class Predict:
         colors = {
             "Overall": "\033[94m",
             "Micro Average": "\033[96m",
-            "Macro Average": "\033[92m",
-            "Crack Only": "\033[95m",
+            "Macro Average": "\033[94m",
+            "Crack Only": "\033[96m",
         }
 
         color = colors.get(title, RESET)
@@ -194,7 +194,7 @@ class Predict:
             "Recall": tp / (tp + fn + eps),
             "Precision": tp / (tp + fp + eps),
             "F1": (2.0 * tp) / (2.0 * tp + fp + fn + eps),
-            "Accuracy": (tp + tn) / (tp + tn + fp + fn + eps),
+            # "Accuracy": (tp + tn) / (tp + tn + fp + fn + eps),
             
             "TP": tp,
             "FP": fp,
@@ -212,7 +212,7 @@ class Predict:
                 "Recall": 0.0,
                 "Precision": 0.0,
                 "F1": 0.0,
-                "Accuracy": 0.0,
+                # "Accuracy": 0.0,
             }
 
         macro = {
@@ -220,7 +220,7 @@ class Predict:
             "Recall": 0.0,
             "Precision": 0.0,
             "F1": 0.0,
-            "Accuracy": 0.0,
+            # "Accuracy": 0.0,
         }
 
         for result in results:
@@ -229,7 +229,7 @@ class Predict:
             macro["Recall"] += metrics["recall"]
             macro["Precision"] += metrics["precision"]
             macro["F1"] += metrics["f1"]
-            macro["Accuracy"] += metrics["accuracy"]
+            # macro["Accuracy"] += metrics["accuracy"]
 
         n = len(results)
 
@@ -249,7 +249,7 @@ class Predict:
                 "Recall": 0.0,
                 "Precision": 0.0,
                 "F1": 0.0,
-                "Accuracy": 0.0,
+                # "Accuracy": 0.0,
             }
 
         macro = self.summarize_macro(crack_results)
@@ -296,12 +296,11 @@ class Predict:
         
         gt_ratio = label_mask.mean() * 100
         has_crack = bool(label_mask.sum())
-
-        print(f"[{os.path.basename(image_path)}]")
-        print(f"  IoU: {metrics['iou']:.4f}")
-        print(f"  Recall: {metrics['recall']:.4f}")
-        print(f"  Precision: {metrics['precision']:.4f}")
-        print(f"  F1: {metrics['f1']:.4f}")
+        # print(f"\n[{os.path.basename(image_path)}]")
+        # print(f"  IoU: {metrics['iou']:.4f}")
+        # print(f"  Recall: {metrics['recall']:.4f}")
+        # print(f"  Precision: {metrics['precision']:.4f}")
+        # print(f"  F1: {metrics['f1']:.4f}")
         # print(f"  Accuracy: {metrics['accuracy']:.4f}")
         # print(f"    ひび割れ面積率: {crack_ratio:.2f}%")
 
@@ -319,7 +318,7 @@ class Predict:
         }
 
     # 複数枚で推論を行う
-    def predict_folder(self, img_dir, lab_dir, save_dir="./predict_results"):
+    def predict_folder(self, img_dir, lab_dir, save_dir="./predict_result"):
 
         # 画像とラベルのペアを収集する
         pairs = collect_pairs(img_dir, lab_dir)
@@ -338,6 +337,9 @@ class Predict:
             total_cm[0, 1] += result["metrics"]["fp"]
             total_cm[1, 0] += result["metrics"]["fn"]
             total_cm[1, 1] += result["metrics"]["tp"]
+            
+        print('')
+        print('-'*30)
 
         # オーバーオールスコアの表示
         overall = self.summarize_overall(results)
@@ -354,12 +356,14 @@ class Predict:
         # ひび割れ画像のみの表示
         crack = self.summarize_crack_only(results)
         self.print_summary("Crack Only", crack)
+        
+        print('-'*30)
 
         # 混同行列を result フォルダへ保存する
-        cm_path = os.path.join(save_dir, "confusion_matrix.png")
+        cm_path = os.path.join(save_dir, "..\\confusion_matrix.png")
         self.save_confusion_matrix(total_cm, cm_path)
 
-        print(f"\n  Confusion matrix: {cm_path}")
+        print(f"\Export matrix: {cm_path}")
         
         self.save_metrics_csv(results, save_dir)
 
