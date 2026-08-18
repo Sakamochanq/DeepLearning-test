@@ -134,12 +134,12 @@ class DataManager:
 
         train_img_dir = os.path.join(data_root, get_config_attr("train_img_dir", default="train_img"))
         train_lab_dir = os.path.join(data_root, get_config_attr("train_lab_dir", default="train_lab"))
-        test_img_dir  = os.path.join(data_root, get_config_attr("test_img_dir", default="test_img"))
-        test_lab_dir  = os.path.join(data_root, get_config_attr("test_lab_dir", default="test_lab"))
+        # test_img_dir  = os.path.join(data_root, get_config_attr("test_img_dir", default="test_img"))
+        # test_lab_dir  = os.path.join(data_root, get_config_attr("test_lab_dir", default="test_lab"))
 
-        # train_img/train_lab と test_img/test_lab の両方をまとめて1つのプールにする
+        # train_img/train_lab のみをまとめて1つのプールにする
         pairs = collect_pairs(train_img_dir, train_lab_dir)
-        pairs += collect_pairs(test_img_dir, test_lab_dir)
+        # pairs += collect_pairs(test_img_dir, test_lab_dir)
 
         if not pairs:
             raise ValueError(f"Not Found Dataset: {data_root}")

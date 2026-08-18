@@ -6,8 +6,9 @@ class config:
     # 各サブフォルダ名
     train_img_dir = "C:\\Enviroments\\nnForge\\src\\dataset\\images\\DeepCrack\\train_img"
     train_lab_dir = "C:\\Enviroments\\nnForge\\src\\dataset\\images\\DeepCrack\\train_lab"
-    test_img_dir = "C:\\Enviroments\\nnForge\\src\\dataset\\images\\DeepCrack\\test_img"
-    test_lab_dir = "C:\\Enviroments\\nnForge\\src\\dataset\\images\\DeepCrack\\test_lab"
+    
+    # test_img_dir = "C:\\Enviroments\\nnForge\\src\\dataset\\images\\DeepCrack\\test_img"
+    # test_lab_dir = "C:\\Enviroments\\nnForge\\src\\dataset\\images\\DeepCrack\\test_lab"
     
     # 分割シード
     seed = 42
@@ -28,7 +29,7 @@ class config:
     # ----- segmentation ----- #
     
     # セグメンテーションモデルのアーキテクチャ
-    architecture = "Unetplusplus"
+    architecture = "Unet"
     
     # エンコーダー（バックボーン）
     encoder_name = "efficientnet-b4"
