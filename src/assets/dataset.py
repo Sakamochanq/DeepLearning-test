@@ -146,7 +146,7 @@ class DataManager:
 
         seed = int(get_config_attr("SEED", "seed", default=42))
 
-        # train_img+test_img をまとめて train と val に分割
+        # train_img をまとめて train と val に分割
         train_idx, val_idx = train_val_split_indices(len(pairs), val_ratio=val_ratio, seed=seed)
 
         train_pairs = [pairs[i] for i in train_idx]
