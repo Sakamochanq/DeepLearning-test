@@ -65,14 +65,12 @@ class CrackSegDataset(Dataset):
         # mask = TF.resize(mask, (self.img_size, self.img_size), interpolation=transforms.InterpolationMode.NEAREST)
 
         if self.train:
-            
-            # 【変更】±180°の任意回転から、ピクセルが壊れない「90度単位の回転」に変更
-            # 0度, 90度, 180度, 270度のいずれかからランダムに選択
+
+            # 【変更】90°/270°回転は 544×384 のバッチ処理と相性が悪いため廃止
+            # 180°反転のみ残す（H, W が変わらないため安全）
             if random.random() < 0.5:
-                # 1: 90度, 2: 180度, 3: 270度 回転
-                rot_k = random.choice([1, 2, 3])
-                image = TF.rotate(image, rot_k * 90)
-                mask = TF.rotate(mask, rot_k * 90, interpolation=transforms.InterpolationMode.NEAREST)
+                image = TF.rotate(image, 180)
+                mask = TF.rotate(mask, 180, interpolation=transforms.InterpolationMode.NEAREST)
 
             # 50%で水平反転
             if random.random() < 0.5:
