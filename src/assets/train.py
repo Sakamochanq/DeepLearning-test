@@ -79,7 +79,8 @@ class Train:
 
     @staticmethod
     def _dice_score(preds: torch.Tensor, targets: torch.Tensor, smooth: float = 1e-6) -> float:
-        """バッチ平均のDice係数を計算する"""
+        
+        #バッチ平均のDice係数を計算する
         intersection = (preds * targets).sum(dim=(1, 2, 3))
         union = preds.sum(dim=(1, 2, 3)) + targets.sum(dim=(1, 2, 3))
         dice = (2 * intersection + smooth) / (union + smooth)
