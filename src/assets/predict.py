@@ -1,4 +1,5 @@
 import os
+import csv
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -6,6 +7,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from torchvision import transforms
 from torchvision.transforms import functional as TF
+from tqdm import tqdm
 from assets.dataset import collect_pairs
 from assets.config import config
 
@@ -98,6 +100,164 @@ class Predict:
             "f1": f1,
             "accuracy": accuracy,
         }
+        
+    # 評価指標をCSVへ保存する
+    def save_metrics_csv(self, results, save_dir):
+
+        csv_path = os.path.join(save_dir, "..\\metrics.csv")
+
+        with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
+
+            writer = csv.writer(f)
+
+            writer.writerow([
+                "Image",
+                "Has Crack",
+                "TP",
+                "TN",
+                "FP",
+                "FN",
+                "IoU",
+                "Recall",
+                "Precision",
+                "F1",
+                "Accuracy",
+                "GroundTruth Ratio (%)",
+                "Prediction Ratio (%)"
+            ])
+
+            for result in results:
+
+                metrics = result["metrics"]
+
+                writer.writerow([
+                    os.path.basename(result["path"]),
+                    "Yes" if result["has_crack"] else "No",
+                    metrics["tp"],
+                    metrics["tn"],
+                    metrics["fp"],
+                    metrics["fn"],
+                    f"{metrics['iou']:.6f}",
+                    f"{metrics['recall']:.6f}",
+                    f"{metrics['precision']:.6f}",
+                    f"{metrics['f1']:.6f}",
+                    f"{metrics['accuracy']:.6f}",
+                    f"{result['gt_ratio']:.4f}",
+                    f"{result['pred_ratio']:.4f}",
+                ])
+
+        # print(f"Export CSV : {csv_path}")
+        
+    
+    # Summaryを整形して表示させる関数
+    def print_summary(self, title, summary):
+        RESET = "\033[0m"
+        colors = {
+            "Overall": "\033[94m ",
+            "Micro Average": "\033[96m ",
+            "Macro Average": "\033[94m ",
+            "Crack Only": "\033[96m ",
+        }
+
+        color = colors.get(title, RESET)
+
+        print()
+        print(f"{color}{title}{RESET}")
+
+        for key, value in summary.items():
+
+            if isinstance(value, float):
+                print(f"  {key:<10}: {value:.4f}")
+            else:
+                print(f"  {key:<10}: {value}")
+        print()
+    
+    # 全体情報を集計する
+    def summarize_overall(self, results):
+        total = len(results)
+        crack = sum(result["has_crack"] for result in results)
+
+        return {
+            "Images": total,
+            "Crack": crack,
+            "Background": total - crack,
+        }
+    
+    
+    # Micro Average（全画素をまとめて評価）
+    def summarize_micro(self, total_cm):
+        tn, fp = total_cm[0, 0], total_cm[0, 1]
+        fn, tp = total_cm[1, 0], total_cm[1, 1]
+        eps = 1e-8
+
+        return {
+            "IoU": tp / (tp + fp + fn + eps),
+            "Recall": tp / (tp + fn + eps),
+            "Precision": tp / (tp + fp + eps),
+            "F1": (2.0 * tp) / (2.0 * tp + fp + fn + eps),
+            # "Accuracy": (tp + tn) / (tp + tn + fp + fn + eps),
+            
+            "TP": tp,
+            "FP": fp,
+            "FN": fn,
+            "TN": tn,
+        }
+        
+    # Macro Average（画像ごとの平均）
+    def summarize_macro(self, results):
+        eps = 1e-8
+        if len(results) == 0:
+
+            return {
+                "IoU": 0.0,
+                "Recall": 0.0,
+                "Precision": 0.0,
+                "F1": 0.0,
+                # "Accuracy": 0.0,
+            }
+
+        macro = {
+            "IoU": 0.0,
+            "Recall": 0.0,
+            "Precision": 0.0,
+            "F1": 0.0,
+            # "Accuracy": 0.0,
+        }
+
+        for result in results:
+            metrics = result["metrics"]
+            macro["IoU"] += metrics["iou"]
+            macro["Recall"] += metrics["recall"]
+            macro["Precision"] += metrics["precision"]
+            macro["F1"] += metrics["f1"]
+            # macro["Accuracy"] += metrics["accuracy"]
+
+        n = len(results)
+
+        for key in macro:
+            macro[key] /= (n + eps)
+
+        return macro
+    
+    # ひび割れ画像のみの平均
+    def summarize_crack_only(self, results):
+        crack_results = [r for r in results if r["has_crack"]]
+        if len(crack_results) == 0:
+
+            return {
+                "Images": 0,
+                "IoU": 0.0,
+                "Recall": 0.0,
+                "Precision": 0.0,
+                "F1": 0.0,
+                # "Accuracy": 0.0,
+            }
+
+        macro = self.summarize_macro(crack_results)
+        macro["Images"] = len(crack_results)
+
+        return macro
+    
 
     # 混同行列を描画して保存する
     def save_confusion_matrix(self, cm, save_path):
@@ -134,25 +294,33 @@ class Predict:
 
         metrics = self.calculate_metrics(pred_mask, label_mask)
         crack_ratio = pred_mask.mean() * 100
-
-        print(f"[{os.path.basename(image_path)}]")
-        print(f"  IoU: {metrics['iou']:.4f}")
-        print(f"  Recall: {metrics['recall']:.4f}")
-        print(f"  Precision: {metrics['precision']:.4f}")
-        print(f"  F1: {metrics['f1']:.4f}")
-        print(f"  Accuracy: {metrics['accuracy']:.4f}")
+        
+        gt_ratio = label_mask.mean() * 100
+        has_crack = bool(label_mask.sum())
+        
+        # print(f"\n[{os.path.basename(image_path)}]")
+        # print(f"  IoU: {metrics['iou']:.4f}")
+        # print(f"  Recall: {metrics['recall']:.4f}")
+        # print(f"  Precision: {metrics['precision']:.4f}")
+        # print(f"  F1: {metrics['f1']:.4f}")
+        # print(f"  Accuracy: {metrics['accuracy']:.4f}")
         # print(f"    ひび割れ面積率: {crack_ratio:.2f}%")
 
         return {
             "path": image_path,
             "label_path": label_path,
             "pred_mask": pred_mask,
-            "crack_ratio": crack_ratio,
+            
+            "has_crack": has_crack,
+            
+            "gt_ratio": gt_ratio,
+            "pred_ratio": crack_ratio,
+            
             "metrics": metrics,
         }
 
     # 複数枚で推論を行う
-    def predict_folder(self, img_dir, lab_dir, save_dir="./predict_results"):
+    def predict_folder(self, img_dir, lab_dir, save_dir="./predict_result"):
 
         # 画像とラベルのペアを収集する
         pairs = collect_pairs(img_dir, lab_dir)
@@ -164,37 +332,46 @@ class Predict:
         results = []
         total_cm = np.zeros((2, 2), dtype=np.int64)
 
-        for img_path, lab_path in pairs:
+        print('')
+        for img_path, lab_path in tqdm(pairs, desc=" Predict", ncols=100, colour="#53E6B5", ascii="-#"):
             result = self.predict_image(img_path, lab_path, save_dir=save_dir)
             results.append(result)
             total_cm[0, 0] += result["metrics"]["tn"]
             total_cm[0, 1] += result["metrics"]["fp"]
             total_cm[1, 0] += result["metrics"]["fn"]
             total_cm[1, 1] += result["metrics"]["tp"]
+            
+        print('')
+        # print('-'*30)
 
-        # 集計値を出力する
-        tn, fp = total_cm[0, 0], total_cm[0, 1]
-        fn, tp = total_cm[1, 0], total_cm[1, 1]
-        eps = 1e-8
-        summary = {
-            "iou": float(tp / (tp + fp + fn + eps)),
-            "recall": float(tp / (tp + fn + eps)),
-            "precision": float(tp / (tp + fp + eps)),
-            "f1": float((2.0 * tp) / (2.0 * tp + fp + fn + eps)),
-            "accuracy": float((tp + tn) / (tp + tn + fp + fn + eps)),
-        }
-
-        print("\n[Summary]")
-        print(f"  IoU: {summary['iou']:.4f}")
-        print(f"  Recall: {summary['recall']:.4f}")
-        print(f"  Precision: {summary['precision']:.4f}")
-        print(f"  F1: {summary['f1']:.4f}")
-        print(f"  Accuracy: {summary['accuracy']:.4f}")
+        # オーバーオールスコアの表示
+        # 入力画像
+        overall = self.summarize_overall(results)
+        self.print_summary("Overall", overall)
+        
+        # マイクロ平均の表示
+        # 全体画素の全ての画像のTP/FP/FN/FPを合計した評価 - 画素単位の性能評価）
+        micro = self.summarize_micro(total_cm)
+        self.print_summary("Micro Average", micro)
+        
+        # マクロ平均の表示
+        # 各画像のIoUやF1を求め、その平均値 - 画像ごとの性能評価
+        macro = self.summarize_macro(results)
+        self.print_summary("Macro Average", macro)
+        
+        # ひび割れ画像のみの表示
+        # ひび割れが存在する画像のみを対象とした評価 - 背景画像は対象外
+        crack = self.summarize_crack_only(results)
+        self.print_summary("Crack Only", crack)
+        
+        # print('-'*30)
 
         # 混同行列を result フォルダへ保存する
-        cm_path = os.path.join(save_dir, "confusion_matrix.png")
+        cm_path = os.path.join(save_dir, "..\\confusion_matrix.png")
         self.save_confusion_matrix(total_cm, cm_path)
 
-        print(f"  Confusion matrix: {cm_path}")
+        # print(f"\nExport matrix: {cm_path}")
+        
+        self.save_metrics_csv(results, save_dir)
 
         return results
