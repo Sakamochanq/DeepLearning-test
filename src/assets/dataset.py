@@ -60,11 +60,9 @@ class CrackSegDataset(Dataset):
 
         image = Image.open(img_path).convert("RGB")
         mask = Image.open(lab_path).convert("L")
-
-        # サイズ統一（マスクは最近傍補間でラベル値を保持）
-        image = TF.resize(image, (self.img_size, self.img_size))
-        mask = TF.resize(mask, (self.img_size, self.img_size),
-                          interpolation=transforms.InterpolationMode.NEAREST)
+        
+        # image = TF.resize(image, (self.img_size, self.img_size))
+        # mask = TF.resize(mask, (self.img_size, self.img_size), interpolation=transforms.InterpolationMode.NEAREST)
 
         if self.train:
             
