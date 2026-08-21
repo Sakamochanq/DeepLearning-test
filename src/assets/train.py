@@ -53,7 +53,7 @@ class Train:
         self.train_loader = train_loader
         self.val_loader = val_loader
 
-        # 最適化アルゴリズム ｜ 今回は ADAM を使用
+        # 最適化アルゴリズム ｜ 今回は ADAMW を使用
         # 損失関数（BCE + Dice の合成損失）
         self.criterion = DiceBCELoss(bce_weight=getattr(config, "bce_weight", 0.5))
         

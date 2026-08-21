@@ -6,6 +6,7 @@ class Model:
     def build(self):
         
         # セグメンテーションモデルを構築する
+        # U-Netを使用
         model = smp.Unet(
             encoder_name = config.encoder_name,
             encoder_weights = config.encoder_weights,
