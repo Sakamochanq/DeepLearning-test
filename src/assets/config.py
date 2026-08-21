@@ -7,14 +7,11 @@ class config:
     train_img_dir = "C:\\Enviroments\\nnForge\\src\\dataset\\images\\DeepCrack\\train_img"
     train_lab_dir = "C:\\Enviroments\\nnForge\\src\\dataset\\images\\DeepCrack\\train_lab"
     
-    # test_img_dir = "C:\\Enviroments\\nnForge\\src\\dataset\\images\\DeepCrack\\test_img"
-    # test_lab_dir = "C:\\Enviroments\\nnForge\\src\\dataset\\images\\DeepCrack\\test_lab"
-    
     # 分割シード
     seed = 42
 
     #画像サイズ
-    img_size = 512;
+    # img_size = 512;
     
     # バッチサイズ
     batch_size = 16;

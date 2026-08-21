@@ -53,7 +53,7 @@ class Train:
         self.train_loader = train_loader
         self.val_loader = val_loader
 
-        # 最適化アルゴリズム ｜ 今回は ADAM を使用
+        # 最適化アルゴリズム ｜ 今回は ADAMW を使用
         # 損失関数（BCE + Dice の合成損失）
         self.criterion = DiceBCELoss(bce_weight=getattr(config, "bce_weight", 0.5))
         
@@ -79,7 +79,8 @@ class Train:
 
     @staticmethod
     def _dice_score(preds: torch.Tensor, targets: torch.Tensor, smooth: float = 1e-6) -> float:
-        """バッチ平均のDice係数を計算する"""
+        
+        #バッチ平均のDice係数を計算する
         intersection = (preds * targets).sum(dim=(1, 2, 3))
         union = preds.sum(dim=(1, 2, 3)) + targets.sum(dim=(1, 2, 3))
         dice = (2 * intersection + smooth) / (union + smooth)

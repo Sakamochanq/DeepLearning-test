@@ -31,7 +31,8 @@ class Predict:
 
     def load_image(self, image_path):
         image = Image.open(image_path).convert("RGB")
-        image = TF.resize(image, (config.img_size, config.img_size))
+        
+        # image = TF.resize(image, (config.img_size, config.img_size))
 
         # 画像をテンソル行列に変換
         tensor = TF.to_tensor(image)
@@ -42,11 +43,12 @@ class Predict:
     # 画像と正解ラベルを読み込む
     def load_label(self, label_path):
         label = Image.open(label_path).convert("L")
-        label = TF.resize(
-            label,
-            (config.img_size, config.img_size),
-            interpolation=transforms.InterpolationMode.NEAREST,
-        )
+        
+        # label = TF.resize(
+        #     label,
+        #     (config.img_size, config.img_size),
+        #     interpolation=transforms.InterpolationMode.NEAREST,
+        # )
 
         label = TF.to_tensor(label)
         label = (label > 0.5).to(torch.uint8).squeeze(0).cpu().numpy()
