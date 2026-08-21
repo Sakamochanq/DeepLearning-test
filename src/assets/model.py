@@ -17,7 +17,7 @@ class Model:
         )
         
         # 既存の学習済みモデルの重みを固定する
-        # まず全体を固定する
+        # まず全体を学習する
         for param in model.parameters():
             param.requires_grad = True
             
