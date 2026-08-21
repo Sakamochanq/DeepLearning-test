@@ -15,8 +15,35 @@ model = model.to(device)
 model.load_state_dict(torch.load(config.model, map_location=device))
 model.eval()
 
+
+Modes = ["origin", "erosion", "dilation", "opening", "closing"]
+
+print("\n Morphology Mode")
+
+
+for i, mode in enumerate(Modes, start=1):
+    print(f"  {i}. {mode}")
+
+while True:
+    try:
+        choice = int(input("\n Select ❯ ").strip())
+
+        if 1 <= choice <= len(Modes):
+            mode = Modes[choice - 1]
+            break
+
+        print(" ？？？.")
+
+    except ValueError:
+        print(" Please enter a number.")
+
+
+print(f"\n Mode : {mode}")
+
+
+
 # Predictorの定義
-predictor = Predict(model, device)
+predictor = Predict(model, device, mode=mode)
 
 # DeepCrackのルートディレクトリ（配下に test_img, test_lab を想定）
 root = input('\n Root ❯ ').strip()
@@ -26,7 +53,7 @@ img_dir = os.path.join(root, "image")
 lab_dir = os.path.join(root, "label")
 
 # 結果の保存先
-save_dir = os.path.join(root, "result")
+save_dir = os.path.join(root, "result", mode)
 
 # ひび割れ抽出と評価を実行する
 predictor.predict_folder(img_dir, lab_dir, save_dir=save_dir)

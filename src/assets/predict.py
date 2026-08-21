@@ -1,6 +1,7 @@
 import os
 import csv
 import torch
+import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -16,9 +17,10 @@ SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 
 
 class Predict:
-    def __init__(self, model, device):
+    def __init__(self, model, device, mode="origin"):
         self.device = device
         self.model = model
+        self.mode = mode
 
         # ImageNetの平均と標準偏差で正規化（学習時と合わせる）
         self.normalize = transforms.Normalize(
@@ -66,6 +68,69 @@ class Predict:
         pred_mask = (prob_map > self.threshold).astype(np.uint8)
 
         return image, prob_map, pred_mask
+    
+    
+    # モルフォロジー処理を適用する
+    def apply_morphology(self, pred_mask):
+
+        # カーネルサイズ・形状は固定
+        kernel_size = (5, 5)
+
+        # カーネル形状
+        kernel_shape = cv2.MORPH_RECT
+        
+        # 実行回数
+        iterations = 1
+
+        # カーネル作成
+        kernel = cv2.getStructuringElement(
+            kernel_shape,
+            kernel_size
+        )
+
+        # 処理なし
+        if self.mode == "origin":
+            processed_mask = pred_mask
+
+        # 収縮
+        elif self.mode == "erosion":
+            processed_mask = cv2.erode(
+                pred_mask,
+                kernel,
+                iterations=iterations
+            )
+
+        # 膨張
+        elif self.mode == "dilation":
+            processed_mask = cv2.dilate(
+                pred_mask,
+                kernel,
+                iterations=iterations
+            )
+
+        # オープニング
+        elif self.mode == "opening":
+            processed_mask = cv2.morphologyEx(
+                pred_mask,
+                cv2.MORPH_OPEN,
+                kernel
+            )
+
+        # クロージング
+        elif self.mode == "closing":
+            processed_mask = cv2.morphologyEx(
+                pred_mask,
+                cv2.MORPH_CLOSE,
+                kernel
+            )
+
+        else:
+            raise ValueError(
+                f"Unsupported morphology mode: {self.mode}"
+            )
+
+        return processed_mask.astype(np.uint8)
+    
 
     # 予測マスクを保存する
     def save_mask(self, pred_mask, save_path):
@@ -286,8 +351,13 @@ class Predict:
     # 結果を保存する
     def predict_image(self, image_path, label_path, save_dir="./results"):
         os.makedirs(save_dir, exist_ok=True)
-
+        
         image, prob_map, pred_mask = self.predict_single(image_path)
+
+        # 予測マスクにモルフォロジー処理を適用
+        pred_mask = self.apply_morphology(pred_mask)
+
+        # 正解ラベルを読み込む
         label_mask = self.load_label(label_path)
 
         fname = os.path.splitext(os.path.basename(image_path))[0]
