@@ -74,7 +74,7 @@ class Predict:
     def apply_morphology(self, pred_mask):
 
         # カーネルサイズ・形状は固定
-        kernel_size = (5, 5)
+        kernel_size = (3, 3)
 
         # カーネル形状
         kernel_shape = cv2.MORPH_RECT
@@ -171,7 +171,8 @@ class Predict:
     # 評価指標をCSVへ保存する
     def save_metrics_csv(self, results, save_dir):
 
-        csv_path = os.path.join(save_dir, "..\\metrics.csv")
+        # csv_path = os.path.join(save_dir, "..\\metrics.csv")
+        csv_path = os.path.join(save_dir, "metrics.csv")
 
         with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
 
@@ -439,7 +440,9 @@ class Predict:
         # print('-'*30)
 
         # 混同行列を result フォルダへ保存する
-        cm_path = os.path.join(save_dir, "..\\confusion_matrix.png")
+        # cm_path = os.path.join(save_dir, "..\\confusion_matrix.png")
+        cm_path = os.path.join(save_dir, "confusion_matrix.png")
+        
         self.save_confusion_matrix(total_cm, cm_path)
 
         # print(f"\nExport matrix: {cm_path}")
