@@ -3,10 +3,6 @@
     <p>画像解析・深層学習を行うための開発環境 🐉</p>
 </div>
 
-<!-- <a href="https://github.com/Sakamochanq/nnForge/actions"> -->
-    <!-- <img src="https://github.com/Sakamochanq/nnForge/workflows/Python%20CI/badge.svg"> -->
-<!-- </a> -->
-
 <br>
 
 <h3>概要</h3>
