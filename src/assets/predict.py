@@ -110,24 +110,52 @@ class Predict:
 
         # オープニング
         elif self.mode == "opening":
-            processed_mask = cv2.morphologyEx(
+            
+            temp = cv2.erode(
                 pred_mask,
-                cv2.MORPH_OPEN,
-                kernel
+                kernel,
+                iterations=iterations
             )
+            
+            processed_mask = cv2.dilate(
+                temp,
+                kernel,
+                iterations=iterations
+            )
+            
+            #processed_mask = cv2.morphologyEx(
+            #    pred_mask,
+            #    cv2.MORPH_OPEN,
+            #    kernel
+            #)
 
         # クロージング
         elif self.mode == "closing":
-            processed_mask = cv2.morphologyEx(
+            
+            temp = cv2.dilate(
                 pred_mask,
-                cv2.MORPH_CLOSE,
-                kernel
+                kernel,
+                iterations=iterations
             )
+            
+            processed_mask = cv2.erode(
+                temp,
+                kernel,
+                iterations=iterations
+            )
+            
+            #processed_mask = cv2.morphologyEx(
+            #    pred_mask,
+            #    cv2.MORPH_CLOSE,
+            #    kernel
+            #)
 
         else:
             raise ValueError(
                 f"Unsupported morphology mode: {self.mode}"
             )
+            
+        # print(kernel) #[1 1 1, 1 1 1, 1 1 1]
 
         return processed_mask.astype(np.uint8)
     
