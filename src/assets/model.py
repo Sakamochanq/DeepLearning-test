@@ -22,13 +22,13 @@ class Model:
             param.requires_grad = True
             
         # 互換性のある encoder の場合のみ深い層を再学習対象にする
-        if hasattr(model.encoder, "layer3"):
-            for param in model.encoder.layer3.parameters():
-                param.requires_grad = True
+        # if hasattr(model.encoder, "layer3"):
+        #     for param in model.encoder.layer3.parameters():
+        #         param.requires_grad = True
 
-        if hasattr(model.encoder, "layer4"):
-            for param in model.encoder.layer4.parameters():
-                param.requires_grad = True
+        # if hasattr(model.encoder, "layer4"):
+        #    for param in model.encoder.layer4.parameters():
+        #       param.requires_grad = True
         
         # デコーダーは常時学習
         for param in model.decoder.parameters():
